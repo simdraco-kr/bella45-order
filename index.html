@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BELLA45 스마트 오더</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- [BI 규정] 영문/제목 지정서체: Tenor Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&display=swap" rel="stylesheet">
+    
+    <!-- [BI 규정] 국문/본문 지정서체: Wanted Sans -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
+
+    <script>
+        // Tailwind CSS 설정에 BI 컬러 강제 주입
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bella: {
+                            bg: '#F0EBE2',    // 본문 컬러 (매뉴얼 기준)
+                            mid: '#8F7F77',   // 중간 톤 (그래픽 모티프 등)
+                            dark: '#726862',  // 텍스트/강조 톤
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Wanted Sans Variable"', '"Wanted Sans"', 'sans-serif'], // 기본 국문 폰트
+                        en: ['"Tenor Sans"', 'sans-serif'], // 영문 전용 폰트
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        
+        /* [BI 규정] 전체 배경색 지정 (#F0EBE2) */
+        body { 
+            background-color: #F0EBE2; 
+            color: #726862; 
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 입력창 포커스 스타일 (BI 컬러 동기화) */
+        input:focus, select:focus { 
+            border-color: #726862 !important; 
+            ring: 1px solid #726862; 
+            outline: none; 
+        }
+
+        /* 폰트 적용 유틸리티 */
+        .font-en { font-family: "Tenor Sans", sans-serif; }
+    </style>
+</head>
+<body class="pb-32 font-sans">
+
+    <!-- [BI 규정] 헤더 영역 (로고 이미지 적용 및 비율 유지) -->
+    <header class="bg-white p-6 sticky top-0 z-40 shadow-sm border-b-2 border-bella-mid">
+        <div class="flex justify-center items-center h-10">
+            <!-- 임의 수정 금지된 로고 파일 적용 -->
+            <img src="https://ecimg.cafe24img.com/pg2402b13486338055/prolounge/bella45_web/BELLA%20Manual_outline%28V1.png" alt="BELLA 45" class="h-full object-contain">
+        </div>
+        <p class="font-en text-[10px] text-center text-bella-mid mt-3 uppercase tracking-[0.2em]">Smart Ordering Service for Members</p>
+    </header>
+
+    <main class="p-4 max-w-md mx-auto mt-2">
+        <!-- 고객 정보 -->
+        <section class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-bella-bg">
+            <h2 class="text-lg font-bold text-bella-dark mb-5 border-l-4 border-bella-mid pl-3">예약자 정보</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[13px] font-semibold text-bella-mid mb-1 ml-1">라운딩 코스</label>
+                    <select id="courseName" class="w-full p-3 bg-[#f8f7f5] border border-[#e5e1d8] rounded-lg text-bella-dark font-medium appearance-none text-base">
+                        <option value="">코스를 선택하세요</option>
+                        <option value="오너스A">오너스A</option>
+                        <option value="오너스B">오너스B</option>
+                        <option value="마스터C">마스터C</option>
+                        <option value="마스터D">마스터D</option>
+                        <option value="마스터E">마스터E</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[13px] font-semibold text-bella-mid mb-1 ml-1">주문자 성함</label>
+                    <input type="text" id="customerName" placeholder="성함을 입력해주세요" class="w-full p-3 bg-[#f8f7f5] border border-[#e5e1d8] rounded-lg text-bella-dark font-medium placeholder-bella-mid/50 text-base">
+                </div>
+                <div>
+                    <label class="block text-[13px] font-semibold text-bella-mid mb-1 ml-1">연락처</label>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-[#e5e1d8] px-4 py-3 rounded-lg text-bella-dark font-bold text-base">010</span>
+                        <input type="tel" id="phoneBody" oninput="formatPhone(this)" maxlength="9" placeholder="1234-5678" class="flex-1 min-w-0 p-3 bg-[#f8f7f5] border border-[#e5e1d8] rounded-lg text-bella-dark font-medium placeholder-bella-mid/50 text-base">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 카탈로그 -->
+        <section>
+            <h2 class="text-lg font-bold text-bella-dark mb-5 px-1 border-l-4 border-bella-mid pl-3">선물세트 선택</h2>
+            <div id="loadingIndicator" class="text-center py-20 text-bella-mid font-medium">상품 정보를 구성하고 있습니다...</div>
+            <div class="grid grid-cols-1 gap-6 hidden" id="productGrid"></div>
+        </section>
+    </main>
+
+    <!-- 하단바 -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-bella-bg p-5 shadow-[0_-10px_20px_rgba(114,104,98,0.1)] z-40">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <p class="text-[11px] text-bella-mid font-medium">총 주문 금액</p>
+                <p class="font-en text-2xl font-bold text-bella-dark tracking-tight" id="totalPrice">0<span class="font-sans text-lg ml-1">원</span></p>
+            </div>
+            <button onclick="submitOrder()" id="submitBtn" class="bg-bella-dark text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform disabled:bg-bella-bg disabled:text-bella-mid disabled:shadow-none" disabled>
+                예약하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 성공 팝업 -->
+    <div id="successModal" class="fixed inset-0 bg-bella-dark/80 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl border-t-8 border-bella-mid">
+            <div class="w-16 h-16 bg-bella-bg text-bella-dark rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-bella-dark mb-2">주문 완료</h3>
+            <p class="text-bella-mid mb-8 text-sm leading-relaxed">성공적으로 주문이 접수되었습니다.<br>주문확인 후 문자메시지를 남겨 드립니다.</p>
+            <button onclick="closeSuccessModal()" class="w-full bg-bella-dark text-white py-4 rounded-xl font-bold text-lg shadow-md active:bg-bella-mid transition-colors">확인</button>
+        </div>
+    </div>
+
+    <script>
+        // ★★★ 여기에 구글 Apps Script [새 배포] 후 얻은 웹앱 URL을 반드시 넣으세요 ★★★
+        const GAS_URL = "https://script.google.com/macros/s/여기에-당신의-배포-주소를-넣으세요/exec";
+
+        let products = [];
+        let cart = {}; 
+
+        function formatPhone(target) {
+            let val = target.value.replace(/[^0-9]/g, '');
+            if (val.length > 4) {
+                target.value = val.substring(0, 4) + '-' + val.substring(4, 8);
+            } else {
+                target.value = val;
+            }
+        }
+
+        function loadProducts() {
+            // 외부 서버(Vercel 등)에서 구글 시트 데이터를 가져오도록 fetch 통신으로 변경
+            fetch(GAS_URL)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) throw new Error(data.error);
+                    products = data;
+                    document.getElementById('loadingIndicator').classList.add('hidden');
+                    document.getElementById('productGrid').classList.remove('hidden');
+                    renderProducts();
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('loadingIndicator').innerText = "서버 연결 실패 또는 배포 주소를 확인하세요.";
+                });
+        }
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = '';
+            
+            products.forEach(p => {
+                const qty = cart[p.id] || 0;
+                // 선택 시 테두리 색상도 BI 컬러(#726862)로 매칭
+                const cardStyle = qty > 0 ? 'ring-2 ring-bella-dark border-bella-dark' : 'border-[#e5e1d8]';
+                const badgeStyle = qty > 0 ? 'bg-bella-dark text-white scale-100' : 'scale-0';
+                
+                grid.innerHTML += `
+                    <div class="product-card rounded-xl shadow-sm border ${cardStyle} overflow-hidden bg-white transition-all">
+                        <div class="relative flex gap-2 overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full aspect-[4/3] bg-bella-bg">
+                            <img src="${p.imgUrl}" loading="lazy" class="w-full h-full object-cover snap-center">
+                            ${p.subImgs ? p.subImgs.map(img => `<img src="${img}" loading="lazy" class="w-full h-full object-cover snap-center">`).join('') : ''}
+                            <div class="absolute top-3 right-3 ${badgeStyle} px-3 py-1.5 rounded-md text-xs font-bold transition-transform shadow-sm">
+                                ${qty}개 선택됨
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <h3 class="font-bold text-bella-dark text-[17px] mb-1 leading-tight">${p.name}</h3>
+                            <p class="font-en text-bella-mid font-bold text-lg mb-4 tracking-tight">${Number(p.price).toLocaleString()}<span class="font-sans text-sm ml-0.5">원</span></p>
+                            
+                            <div class="bg-[#f8f7f5] p-3.5 rounded-lg mb-5 border border-[#e5e1d8]">
+                                <p class="text-[13px] text-bella-mid leading-relaxed break-keep">${p.desc || '상세 설명이 없습니다.'}</p>
+                            </div>
+                            
+                            <div class="flex items-center justify-between gap-4">
+                                <button onclick="updateQty('${p.id}', -1)" class="w-12 h-12 flex items-center justify-center rounded-lg bg-bella-bg text-bella-mid font-en text-2xl active:bg-[#e5e1d8] transition-colors">-</button>
+                                <span class="font-en font-bold text-bella-dark text-xl w-8 text-center">${qty}</span>
+                                <button onclick="updateQty('${p.id}', 1)" class="w-12 h-12 flex items-center justify-center rounded-lg bg-bella-dark text-white font-en text-2xl active:bg-bella-mid transition-colors">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            updateTotal();
+        }
+
+        function updateQty(id, change) {
+            if (!cart[id]) cart[id] = 0;
+            cart[id] += change;
+            if (cart[id] <= 0) delete cart[id];
+            renderProducts();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            let totalItems = 0;
+            products.forEach(p => {
+                if (cart[p.id]) {
+                    total += Number(p.price) * cart[p.id];
+                    totalItems += cart[p.id];
+                }
+            });
+            
+            // 금액에도 영문/숫자 전용 폰트 적용
+            document.getElementById('totalPrice').innerHTML = `${total.toLocaleString()}<span class="font-sans text-lg ml-1">원</span>`;
+            
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = totalItems === 0;
+            btn.innerText = totalItems > 0 ? `예약하기 (${totalItems})` : `예약하기`;
+        }
+
+        function submitOrder() {
+            const courseName = document.getElementById('courseName').value;
+            const name = document.getElementById('customerName').value.trim();
+            const phoneBody = document.getElementById('phoneBody').value.trim();
+
+            if (!courseName || !name || phoneBody.replace('-', '').length < 7) {
+                alert("주문자 정보를 모두 입력해주세요.");
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerText = "처리 중...";
+            submitBtn.disabled = true;
+
+            const payload = {
+                course: courseName,
+                lockerNo: "미입력",
+                name: name,
+                phone: "010-" + phoneBody,
+                totalPrice: document.getElementById('totalPrice').innerText,
+                rawCart: JSON.stringify(cart)
+            };
+
+            // 외부 서버에서 구글 앱스 스크립트로 주문 데이터 전송 (CORS 우회 방식 적용)
+            fetch(GAS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8', // CORS preflight 우회용
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === "success") {
+                    document.getElementById('successModal').classList.remove('hidden');
+                } else {
+                    throw new Error(result.message);
+                }
+            })
+            .catch(err => {
+                alert("오류 발생: " + err.message);
+                submitBtn.innerText = "예약하기";
+                submitBtn.disabled = false;
+            });
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('customerName').value = '';
+            document.getElementById('phoneBody').value = '';
+            cart = {};
+            renderProducts();
+            window.scrollTo(0, 0);
+        }
+
+        window.onload = loadProducts;
+    </script>
+</body>
+</html>
