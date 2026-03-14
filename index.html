@@ -18,24 +18,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Tenor+Sans&display=swap" rel="stylesheet">
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css">
 
     <script>
-        // Tailwind CSS 설정에 BI 컬러 강제 주입
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         bella: {
-                            bg: '#F0EBE2',    // 본문 컬러 (매뉴얼 기준)
-                            mid: '#8F7F77',   // 중간 톤 (그래픽 모티프 등)
-                            dark: '#726862',  // 텍스트/강조 톤
+                            bg: '#F0EBE2',
+                            mid: '#8F7F77',
+                            dark: '#726862',
                         }
                     },
                     fontFamily: {
-                        sans: ['"Wanted Sans Variable"', '"Wanted Sans"', 'sans-serif'], // 기본 국문 폰트
-                        en: ['"Tenor Sans"', 'sans-serif'], // 영문 전용 폰트
+                        sans: ['"Wanted Sans Variable"', '"Wanted Sans"', 'sans-serif'],
+                        en: ['"Tenor Sans"', 'sans-serif'],
                     }
                 }
             }
@@ -44,25 +42,21 @@
 
     <style>
         * { -webkit-tap-highlight-color: transparent; }
-        
-        /* [BI 규정] 전체 배경색 지정 (#F0EBE2) */
-        body { 
-            background-color: #F0EBE2; 
-            color: #726862; 
-        }
-        
+        body { background-color: #F0EBE2; color: #726862; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* 입력창 포커스 스타일 (BI 컬러 동기화) */
-        input:focus, select:focus { 
-            border-color: #726862 !important; 
-            ring: 1px solid #726862; 
-            outline: none; 
-        }
-
-        /* 폰트 적용 유틸리티 */
+        input:focus, select:focus { border-color: #726862 !important; outline: none; box-shadow: 0 0 0 1px #726862; }
         .font-en { font-family: "Tenor Sans", sans-serif; }
+        
+        /* 날짜 입력창 기본 아이콘 스타일링 */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="pb-32 font-sans">
@@ -84,6 +78,10 @@
         <section class="bg-white rounded-xl shadow-sm p-6 mb-8 border border-bella-bg">
             <h2 class="text-lg font-bold text-bella-dark mb-5 border-l-4 border-bella-mid pl-3">예약자 정보</h2>
             <div class="space-y-4">
+                <div>
+                    <label class="block text-[13px] font-semibold text-bella-mid mb-1 ml-1">방문 예정일</label>
+                    <input type="date" id="visitDate" class="w-full p-3 bg-[#f8f7f5] border border-[#e5e1d8] rounded-lg text-bella-dark font-bold text-base">
+                </div>
                 <div>
                     <label class="block text-[13px] font-semibold text-bella-mid mb-1 ml-1">라운딩 코스</label>
                     <select id="courseName" class="w-full p-3 bg-[#f8f7f5] border border-[#e5e1d8] rounded-lg text-bella-dark font-medium appearance-none text-base">
@@ -135,15 +133,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </svg>
             </div>
-            <h3 class="text-2xl font-bold text-bella-dark mb-2">주문 완료</h3>
-            <p class="text-bella-mid mb-8 text-sm leading-relaxed">성공적으로 주문이 접수되었습니다.<br>주문확인 후 문자메시지를 남겨 드립니다.</p>
+            <h3 class="text-2xl font-bold text-bella-dark mb-2">예약 완료</h3>
+            <p class="text-bella-mid mb-8 text-sm leading-relaxed" id="successMessage">성공적으로 주문이 접수되었습니다.<br>방문 당일 프로샵에서 결제 및 수령 도와드리겠습니다.</p>
             <button onclick="closeSuccessModal()" class="w-full bg-bella-dark text-white py-4 rounded-xl font-bold text-lg shadow-md active:bg-bella-mid transition-colors">확인</button>
         </div>
     </div>
 
     <script>
-        // [보안 완결] 기존에 노출되던 구글 GAS 주소를 완전히 삭제함.
-        
         let products = [];
         let cart = {}; 
 
@@ -157,7 +153,17 @@
         }
 
         function loadProducts() {
-            // 구글 주소 대신 내 Vercel API 프록시로 요청을 보냄
+            // [추가됨] 오늘 날짜 구해서 방문 예정일 기본값 및 최소값(과거 선택 방지)으로 설정
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            
+            const visitDateInput = document.getElementById('visitDate');
+            visitDateInput.value = todayStr;
+            visitDateInput.min = todayStr;
+
             fetch('/api/proxy')
                 .then(response => response.json())
                 .then(data => {
@@ -245,12 +251,13 @@
         }
 
         function submitOrder() {
+            const visitDate = document.getElementById('visitDate').value; // [추가됨] 방문일 추출
             const courseName = document.getElementById('courseName').value;
             const name = document.getElementById('customerName').value.trim();
             const phoneBody = document.getElementById('phoneBody').value.trim();
 
-            if (!courseName || !name || phoneBody.replace('-', '').length < 7) {
-                alert("주문자 정보를 모두 입력해주세요.");
+            if (!visitDate || !courseName || !name || phoneBody.replace('-', '').length < 7) {
+                alert("예약 정보를 모두 정확히 입력해주세요.");
                 return;
             }
 
@@ -259,6 +266,7 @@
             submitBtn.disabled = true;
 
             const payload = {
+                visitDate: visitDate, // [추가됨] 백엔드로 방문일 전송
                 course: courseName,
                 lockerNo: "미입력",
                 name: name,
@@ -267,11 +275,10 @@
                 rawCart: JSON.stringify(cart)
             };
 
-            // 구글 주소 대신 내 Vercel API 프록시로 데이터 전송
             fetch('/api/proxy', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json', // 프록시용 데이터 타입 변경
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload)
             })
@@ -292,8 +299,13 @@
 
         function closeSuccessModal() {
             document.getElementById('successModal').classList.add('hidden');
+            // 초기화
             document.getElementById('customerName').value = '';
             document.getElementById('phoneBody').value = '';
+            // 방문일은 오늘로 다시 초기화
+            const now = new Date();
+            document.getElementById('visitDate').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            
             cart = {};
             renderProducts();
             window.scrollTo(0, 0);
